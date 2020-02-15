@@ -248,6 +248,8 @@ xkm_print_keyboard_desc(xkm_keyboard_desc const* kb_desc) {
     } else {
         fprintf(stdout, "G%d\n", (int)(kb_desc->current_group));
     }
+
+    fflush(stdout);
 }
 
 //
@@ -274,10 +276,18 @@ main() {
     }
 
     /* Set event mask. */ {
-        static unsigned long const mask = XkbGroupStateMask | XkbGroupBaseMask |
-                                          XkbGroupLatchMask | XkbGroupLockMask;
-        if(!XkbSelectEventDetails(
-               dpy, XkbUseCoreKbd, XkbStateNotify, mask, mask)) {
+        static unsigned long const map_notify_mask = XkbKeySymsMask;
+        if(!XkbSelectEventDetails(dpy, XkbUseCoreKbd, XkbMapNotify,
+                                  map_notify_mask, map_notify_mask)) {
+            fprintf(stderr, "%s: %s\n", __func__, "Failed to set event mask");
+            return EXIT_FAILURE;
+        }
+
+        static unsigned long const state_notify_mask =
+            XkbGroupStateMask | XkbGroupBaseMask | XkbGroupLatchMask |
+            XkbGroupLockMask;
+        if(!XkbSelectEventDetails(dpy, XkbUseCoreKbd, XkbStateNotify,
+                                  state_notify_mask, state_notify_mask)) {
             fprintf(stderr, "%s: %s\n", __func__, "Failed to set event mask");
             return EXIT_FAILURE;
         }
@@ -288,6 +298,7 @@ main() {
     xkm_print_keyboard_desc(&kb_desc);
 
     // Receive and handle events.
+    unsigned long serial = 0;
     for(XkbEvent event;;) {
         XNextEvent(dpy, &event.core);
         if(XFilterEvent(&event.core, None)) {
@@ -301,9 +312,14 @@ main() {
         // Process the event.
         switch(event.any.xkb_type) {
             case XkbMapNotify:
-                /* fall-through */
-            case XkbNewKeyboardNotify:
-                kb_desc = xkm_obtain_keyboard_desc(dpy);
+                // Note: preventing message flood by examining event's serial
+                // number.
+                if(event.map.serial != serial) {
+                    kb_desc = xkm_obtain_keyboard_desc(dpy);
+                    xkm_print_keyboard_desc(&kb_desc);
+
+                    serial = event.map.serial;
+                }
                 break;
 
             case XkbStateNotify:
