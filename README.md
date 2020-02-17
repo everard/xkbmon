@@ -34,7 +34,7 @@ xkbmon
 Add the following block to the [i3blocks](https://github.com/vivien/i3blocks) config file:
 
 ```
-[pavolmon]
+[xkbmon]
 command=xkbmon
 interval=persist
 ```
