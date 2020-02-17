@@ -170,7 +170,7 @@ xkm_utf8_decode(unsigned char const* string, size_t n) {
 
 xkm_keyboard_desc
 xkm_obtain_keyboard_desc(Display* dpy) {
-    // Obtain full keyboard description from XKB.
+    // Obtain full keyboard description.
     XkbStateRec kb_state = {};
     if(XkbGetState(dpy, XkbUseCoreKbd, &kb_state) != Success) {
         fprintf(
@@ -202,7 +202,7 @@ xkm_obtain_keyboard_desc(Display* dpy) {
         size_t len = strlen(group_name);
 
         // Write the first two UTF-8-encoded characters from the group's full
-        // name to the resulting short group name.
+        // name to the short group name's buffer.
         unsigned char* src_buf = (unsigned char*)group_name;
         unsigned char* dst_buf = (unsigned char*)r.group_names[i];
 
@@ -306,10 +306,9 @@ main() {
             continue;
         }
 
-        // Process the event.
         switch(event.any.xkb_type) {
             case XkbMapNotify:
-                // Note: preventing message flood by examining event's serial
+                // Note: prevent handling the same event by examining its serial
                 // number.
                 if(event.map.serial != serial) {
                     kb_desc = xkm_obtain_keyboard_desc(dpy);
