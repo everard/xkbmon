@@ -6,9 +6,6 @@
 #include <X11/XKBlib.h>
 #include <X11/Xlib.h>
 
-#include <sys/select.h>
-#include <sys/wait.h>
-
 #include <assert.h>
 #include <locale.h>
 #include <string.h>
